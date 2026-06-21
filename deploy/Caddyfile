@@ -1,4 +1,22 @@
+# Local development (http://localhost)
 :80 {
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	handle /uploads/* {
+		reverse_proxy api:8080
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# Production — update domain if you use a different hostname
+myfamily.hopto.org {
 	handle /api/* {
 		reverse_proxy api:8080
 	}

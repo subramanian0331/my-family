@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { Person, PersonFamilyRef, Relationship } from "../types";
 import { alreadyLinkedAsSpouses, isAvailableSpousePartner } from "../lib/spouseFilter";
 import { computeTreeLayout, NODE_HEIGHT, NODE_WIDTH } from "../lib/treeLayout";
+import { TreeAddPersonPanel } from "./TreeAddPersonPanel";
 import { TreeLinkMenu } from "./TreeLinkMenu";
 import { TreePersonNode } from "./TreePersonNode";
 
@@ -82,6 +83,8 @@ export function TreeView({
   const [marriedInLoading, setMarriedInLoading] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [addPersonOpen, setAddPersonOpen] = useState(false);
+  const [addPersonAnchorId, setAddPersonAnchorId] = useState<string | null>(null);
   const suppressNodeClickRef = useRef(false);
 
   const withAnimation = useCallback((fn: () => void) => {
@@ -355,8 +358,27 @@ export function TreeView({
 
   if (persons.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#d9d0c3] bg-[#f8f5f0] p-12 text-center text-[#8a8278]">
-        Add people to start building your tree.
+      <div
+        className={`relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#c5d0dc] shadow-[0_8px_32px_rgba(30,45,60,0.08)] ${className}`}
+      >
+        <div className="flex flex-1 items-center justify-center bg-[#e8eef4] p-8">
+          {canEdit ? (
+            <div className="relative w-full max-w-sm">
+              <p className="mb-4 text-center text-sm text-[#5c6b78]">
+                Add your first family member to start the tree.
+              </p>
+              <TreeAddPersonPanel
+                familyId={familyId}
+                persons={persons}
+                variant="inline"
+                onClose={() => undefined}
+                onAdded={onRelationshipsChanged}
+              />
+            </div>
+          ) : (
+            <p className="text-center text-[#8a8278]">No people in this family tree yet.</p>
+          )}
+        </div>
       </div>
     );
   }
@@ -400,9 +422,24 @@ export function TreeView({
       className={`relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#c5d0dc] shadow-[0_8px_32px_rgba(30,45,60,0.08)] ${className}`}
     >
       {canEdit && (
-        <p className="shrink-0 border-b border-[#c5d0dc] bg-white/80 px-4 py-2 text-xs text-[#5c6b78] backdrop-blur-sm">
-          Drag the <span className="font-medium text-[#1e2a36]">+</span> on a person to link them as spouse or child.
-        </p>
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#c5d0dc] bg-white/80 px-4 py-2 text-xs text-[#5c6b78] backdrop-blur-sm">
+          <p>
+            Drag the <span className="font-medium text-[#1e2a36]">+</span> on a person to link them as spouse or
+            child.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setAddPersonAnchorId(null);
+              setAddPersonOpen(true);
+              setLinkMenu(null);
+              setMarriedInMenu(null);
+            }}
+            className="shrink-0 rounded-lg bg-[#4f86ad] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3d6f94]"
+          >
+            + Add member
+          </button>
+        </div>
       )}
       <div
         ref={containerRef}
@@ -513,7 +550,7 @@ export function TreeView({
                       suppressNodeClickRef.current = false;
                       return;
                     }
-                    if (linkMenu || linkDrag || marriedInMenu) return;
+                    if (linkMenu || linkDrag || marriedInMenu || addPersonOpen) return;
                     onSelect(person);
                   }}
                   onContextMenu={
@@ -550,6 +587,23 @@ export function TreeView({
             onCancel={() => {
               setLinkMenu(null);
               setLinkError(null);
+            }}
+          />
+        )}
+
+        {addPersonOpen && canEdit && (
+          <TreeAddPersonPanel
+            familyId={familyId}
+            persons={persons}
+            anchorPersonId={addPersonAnchorId}
+            onClose={() => {
+              setAddPersonOpen(false);
+              setAddPersonAnchorId(null);
+            }}
+            onAdded={async () => {
+              setAddPersonOpen(false);
+              setAddPersonAnchorId(null);
+              await onRelationshipsChanged();
             }}
           />
         )}
