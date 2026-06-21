@@ -12,10 +12,10 @@ fi
 export IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 echo "==> Pulling images (tag: ${IMAGE_TAG})"
-sudo docker compose pull api frontend
+timeout 300 sudo docker compose pull api frontend
 
 echo "==> Starting containers"
-sudo docker compose up -d
+timeout 120 sudo docker compose up -d --remove-orphans
 
 echo "==> Pruning unused images"
 sudo docker image prune -f

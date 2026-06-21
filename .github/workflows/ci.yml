@@ -80,6 +80,7 @@ jobs:
     needs: [publish]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Deploy to OCI
         uses: appleboy/ssh-action@v1.2.0
@@ -87,9 +88,16 @@ jobs:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_USER }}
           key: ${{ secrets.OCI_SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 8m
+          debug: true
           script: |
             set -euo pipefail
+            echo "==> Deploy started on $(hostname) at $(date -u)"
             cd ~/family_tree
             git fetch origin main
             git reset --hard origin/main
+            chmod +x scripts/deploy.sh scripts/rollback.sh
             ./scripts/deploy.sh
+            echo "==> Deploy finished at $(date -u)"

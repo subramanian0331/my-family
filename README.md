@@ -123,6 +123,19 @@ push to main → tests → build & push images → SSH → git pull → docker c
 
 Create empty repos on Docker Hub named `family-tree-api` and `family-tree-frontend` under **subni9**, or let the first CI push create them.
 
+### CI deploy stuck?
+
+The **publish** job builds images (~3–8 min first run). **deploy** SSHs to OCI (~1–3 min).
+
+If deploy hangs or times out:
+
+1. **Oracle Console → Compute → Instances** — instance must be **Running**
+2. Confirm **public IP** still matches `OCI_HOST` secret (ephemeral IPs change if you recreate the VNIC)
+3. **Security list + NSG** — allow TCP **22** from `0.0.0.0/0` (GitHub Actions has no fixed IP)
+4. Test locally: `ssh -i ~/.ssh/oracle-cloud ubuntu@YOUR_IP 'echo ok'`
+
+Images are still pushed to Docker Hub even if deploy fails — run `make deploy` once the VM is reachable.
+
 ### Manual deploy & rollback (Makefile)
 
 ```bash
