@@ -140,10 +140,10 @@ export const api = {
   acceptInvite: (token: string) =>
     request("/api/invites/accept", { method: "POST", body: JSON.stringify({ token }) }),
   createInvite: (familyId: string, email: string, role: string) =>
-    request(`/api/families/${familyId}/invites`, {
-      method: "POST",
-      body: JSON.stringify({ email, role }),
-    }),
+    request<{ invite: import("../types").Invite; email_sent: boolean }>(
+      `/api/families/${familyId}/invites`,
+      { method: "POST", body: JSON.stringify({ email, role }) },
+    ),
   members: (familyId: string) =>
     requestArray<import("../types").FamilyMember>(`/api/families/${familyId}/members`),
   exportGedcom: async (familyId: string) => {
@@ -171,7 +171,7 @@ export const api = {
   adminRemoveUserFamilyAccess: (userId: string, familyId: string) =>
     request(`/api/admin/users/${userId}/families/${familyId}`, { method: "DELETE" }),
   adminCreateInvite: (familyId: string, email: string, role: import("../types").FamilyRole) =>
-    request("/api/admin/invites", {
+    request<{ invite: import("../types").Invite; email_sent: boolean }>("/api/admin/invites", {
       method: "POST",
       body: JSON.stringify({ family_id: familyId, email, role }),
     }),

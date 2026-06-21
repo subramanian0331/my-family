@@ -3,24 +3,27 @@ package invite
 import (
 	"context"
 	"errors"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	emailclient "github.com/subbu/family_tree/client/email"
 	postgresclient "github.com/subbu/family_tree/client/postgres"
 	"github.com/subbu/family_tree/models"
 )
 
 type service struct {
-	db postgresclient.Client
+	db    postgresclient.Client
+	email emailclient.Client
 }
 
-func NewService(db postgresclient.Client) Service {
-	return &service{db: db}
+func NewService(db postgresclient.Client, mail emailclient.Client) Service {
+	return &service{db: db, email: mail}
 }
 
-func (s *service) Create(ctx context.Context, input CreateInput) (models.Invite, error) {
+func (s *service) Create(ctx context.Context, input CreateInput) (CreateResult, error) {
 	token := uuid.NewString()
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
@@ -40,7 +43,25 @@ func (s *service) Create(ctx context.Context, input CreateInput) (models.Invite,
 		&invite.CreatedBy,
 		&invite.CreatedAt,
 	)
-	return invite, err
+	if err != nil {
+		return CreateResult{}, err
+	}
+
+	result := CreateResult{Invite: invite, EmailSent: false}
+	if s.email.Enabled() {
+		err := s.email.SendInvite(ctx, emailclient.InviteMessage{
+			ToEmail:     invite.Email,
+			FamilyName:  input.FamilyName,
+			Role:        string(invite.Role),
+			InviterName: input.InviterName,
+		})
+		if err != nil {
+			log.Printf("invite email to %s failed: %v", invite.Email, err)
+		} else {
+			result.EmailSent = true
+		}
+	}
+	return result, nil
 }
 
 func (s *service) GetByID(ctx context.Context, inviteID uuid.UUID) (models.Invite, error) {

@@ -6,14 +6,19 @@ import (
 )
 
 type Config struct {
-	DatabaseURL          string
-	GoogleClientID       string
-	GoogleClientSecret   string
-	JWTSecret            string
-	UploadDir            string
-	FrontendURL          string
-	Port                 string
-	SiteAdminEmail       string
+	DatabaseURL        string
+	GoogleClientID     string
+	GoogleClientSecret string
+	JWTSecret          string
+	UploadDir          string
+	FrontendURL        string
+	Port               string
+	SiteAdminEmail     string
+	SMTPHost           string
+	SMTPPort           string
+	SMTPUser           string
+	SMTPPassword       string
+	SMTPFrom           string
 }
 
 func Load() (Config, error) {
@@ -26,6 +31,11 @@ func Load() (Config, error) {
 		FrontendURL:        getenv("FRONTEND_URL", "http://localhost"),
 		Port:               getenv("PORT", "8080"),
 		SiteAdminEmail:     os.Getenv("SITE_ADMIN_EMAIL"),
+		SMTPHost:           os.Getenv("SMTP_HOST"),
+		SMTPPort:           getenv("SMTP_PORT", "587"),
+		SMTPUser:           os.Getenv("SMTP_USER"),
+		SMTPPassword:       os.Getenv("SMTP_PASSWORD"),
+		SMTPFrom:           os.Getenv("SMTP_FROM"),
 	}
 
 	if cfg.DatabaseURL == "" {

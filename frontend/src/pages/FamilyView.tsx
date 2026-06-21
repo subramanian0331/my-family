@@ -60,10 +60,18 @@ export function FamilyView() {
     await load();
   };
 
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
+
   const sendInvite = async () => {
-    if (!inviteEmail.trim()) return;
-    await api.createInvite(familyId, inviteEmail.trim(), inviteRole);
+    const email = inviteEmail.trim();
+    if (!email) return;
+    const result = await api.createInvite(familyId, email, inviteRole);
     setInviteEmail("");
+    setInviteNotice(
+      result.email_sent
+        ? `Invite email sent to ${email}.`
+        : "Invite saved — email not sent (SMTP not configured on server). They can still sign in with that Google account.",
+    );
   };
 
   const exportGed = async () => {
@@ -211,6 +219,11 @@ export function FamilyView() {
           {canManage && (
             <div>
               <h3 className="mb-2 font-medium">Invite someone</h3>
+              {inviteNotice && (
+                <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                  {inviteNotice}
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
                 <input
                   className="flex-1 rounded-lg border border-slate-200 px-3 py-2"

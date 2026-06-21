@@ -21,6 +21,7 @@ type AdminInviteDetail struct {
 type AdminSettings struct {
 	FrontendURL    string `json:"frontend_url"`
 	GoogleEnabled  bool   `json:"google_enabled"`
+	EmailEnabled   bool   `json:"email_enabled"`
 	SiteAdminEmail string `json:"site_admin_email"`
 	UserCount      int    `json:"user_count"`
 	FamilyCount    int    `json:"family_count"`

@@ -136,6 +136,7 @@ export interface AdminInviteDetail {
 export interface AdminSettings {
   frontend_url: string;
   google_enabled: boolean;
+  email_enabled: boolean;
   site_admin_email: string;
   user_count: number;
   family_count: number;

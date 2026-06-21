@@ -45,17 +45,28 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request, familyID uuid.U
 		return
 	}
 
-	invite, err := h.invites.Create(r.Context(), inviteservice.CreateInput{
-		FamilyID:  familyID,
-		Email:     payload.Email,
-		Role:      parseRole(payload.Role),
-		CreatedBy: user.ID,
+	family, err := h.families.GetByID(r.Context(), familyID)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, "family not found")
+		return
+	}
+
+	result, err := h.invites.Create(r.Context(), inviteservice.CreateInput{
+		FamilyID:    familyID,
+		Email:       payload.Email,
+		Role:        parseRole(payload.Role),
+		CreatedBy:   user.ID,
+		FamilyName:  family.Name,
+		InviterName: user.Name,
 	})
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response.JSON(w, http.StatusCreated, invite)
+	response.JSON(w, http.StatusCreated, map[string]any{
+		"invite":     result.Invite,
+		"email_sent": result.EmailSent,
+	})
 }
 
 func (h *Handler) Accept(w http.ResponseWriter, r *http.Request) {

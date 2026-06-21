@@ -36,6 +36,7 @@ func InitializeServer() (*server.Server, error) {
 		provideGoogleClient,
 		providePostgresClient,
 		provideStorageClient,
+		provideEmailClient,
 		userservice.NewService,
 		provideAuthService,
 		familyservice.NewService,

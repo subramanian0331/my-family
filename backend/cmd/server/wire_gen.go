@@ -48,7 +48,8 @@ func InitializeServer() (*server.Server, error) {
 	authService := provideAuthService(googleClient, client, service, configConfig)
 	handler := auth.NewHandler(authService, configConfig)
 	familyService := family.NewService(client)
-	inviteService := invite.NewService(client)
+	emailClient := provideEmailClient(configConfig)
+	inviteService := invite.NewService(client, emailClient)
 	familyHandler := family2.NewHandler(familyService, inviteService)
 	inviteHandler := invite2.NewHandler(inviteService, familyService)
 	personService := person.NewService(client)
@@ -66,7 +67,7 @@ func InitializeServer() (*server.Server, error) {
 	treeHandler := tree.NewHandler(personService, relationshipService, familyService)
 	gedcomService := gedcom.NewService(client)
 	gedcomHandler := gedcom2.NewHandler(gedcomService, familyService)
-	adminHandler := admin.NewHandler(service, familyService, inviteService, configConfig)
+	adminHandler := admin.NewHandler(service, familyService, inviteService, emailClient, configConfig)
 	healthHandler := health.NewHandler(client)
 	dependencies := handlers.Dependencies{
 		Auth:         handler,

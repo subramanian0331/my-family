@@ -91,6 +91,13 @@ Also open **TCP 80 and 443** in the Oracle **Security List** and any attached **
 | `GOOGLE_CLIENT_ID` | OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | OAuth client secret |
 | `SITE_ADMIN_EMAIL` | Google email that becomes site admin |
+| `SMTP_HOST` | Mail server hostname (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | Usually `587` (STARTTLS) or `465` (SSL) |
+| `SMTP_USER` | SMTP username (Gmail: your email) |
+| `SMTP_PASSWORD` | SMTP password (Gmail: [App Password](https://myaccount.google.com/apppasswords)) |
+| `SMTP_FROM` | From header, e.g. `Family Tree <you@gmail.com>` |
+
+When SMTP is configured, family invites trigger a real email with sign-in instructions. **Admin → Settings** shows whether invite email is enabled.
 
 ## CI/CD
 

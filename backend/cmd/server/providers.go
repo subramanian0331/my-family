@@ -1,6 +1,7 @@
 package main
 
 import (
+	emailclient "github.com/subbu/family_tree/client/email"
 	googleclient "github.com/subbu/family_tree/client/google"
 	postgresclient "github.com/subbu/family_tree/client/postgres"
 	storageclient "github.com/subbu/family_tree/client/storage"
@@ -15,6 +16,10 @@ func providePostgresClient(cfg config.Config) (postgresclient.Client, error) {
 
 func provideStorageClient(cfg config.Config) (storageclient.Client, error) {
 	return storageclient.New(cfg.UploadDir)
+}
+
+func provideEmailClient(cfg config.Config) emailclient.Client {
+	return emailclient.New(cfg)
 }
 
 func provideAuthService(

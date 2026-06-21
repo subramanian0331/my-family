@@ -109,12 +109,21 @@ export function Admin() {
     }
   };
 
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
+
   const sendInvite = async () => {
-    if (!inviteEmail.trim() || !inviteFamilyId) return;
+    const email = inviteEmail.trim();
+    if (!email || !inviteFamilyId) return;
     setBusyId("invite-create");
+    setInviteNotice(null);
     try {
-      await api.adminCreateInvite(inviteFamilyId, inviteEmail.trim(), inviteRole);
+      const result = await api.adminCreateInvite(inviteFamilyId, email, inviteRole);
       setInviteEmail("");
+      setInviteNotice(
+        result.email_sent
+          ? `Invite email sent to ${email}.`
+          : "Invite created but email was not sent — check SMTP settings on the server.",
+      );
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invite failed");
@@ -192,6 +201,11 @@ export function Admin() {
             <div className="space-y-6">
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
                 <h2 className="mb-3 font-medium text-slate-900">Send invite</h2>
+                {inviteNotice && (
+                  <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                    {inviteNotice}
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   <input
                     className="min-w-[200px] flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
@@ -278,6 +292,10 @@ export function Admin() {
               <SettingsCard
                 label="Google sign-in"
                 value={settings.google_enabled ? "Enabled" : "Disabled"}
+              />
+              <SettingsCard
+                label="Invite emails (SMTP)"
+                value={settings.email_enabled ? "Enabled" : "Not configured"}
               />
               <SettingsCard label="Bootstrap admin email" value={settings.site_admin_email || "—"} />
               <SettingsCard label="Users" value={String(settings.user_count)} />

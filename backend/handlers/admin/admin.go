@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	emailclient "github.com/subbu/family_tree/client/email"
 	"github.com/subbu/family_tree/config"
 	"github.com/subbu/family_tree/handlers/access"
 	"github.com/subbu/family_tree/handlers/middleware"
@@ -19,6 +20,7 @@ type Handler struct {
 	users    userservice.Service
 	families familyservice.Service
 	invites  inviteservice.Service
+	email    emailclient.Client
 	cfg      config.Config
 }
 
@@ -26,9 +28,10 @@ func NewHandler(
 	users userservice.Service,
 	families familyservice.Service,
 	invites inviteservice.Service,
+	email emailclient.Client,
 	cfg config.Config,
 ) *Handler {
-	return &Handler{users: users, families: families, invites: invites, cfg: cfg}
+	return &Handler{users: users, families: families, invites: invites, email: email, cfg: cfg}
 }
 
 func (h *Handler) ListFamilies(w http.ResponseWriter, r *http.Request) {
@@ -127,6 +130,7 @@ func (h *Handler) Settings(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, models.AdminSettings{
 		FrontendURL:    h.cfg.FrontendURL,
 		GoogleEnabled:  h.cfg.GoogleClientID != "" && h.cfg.GoogleClientSecret != "",
+		EmailEnabled:   h.email.Enabled(),
 		SiteAdminEmail: h.cfg.SiteAdminEmail,
 		UserCount:      len(users),
 		FamilyCount:    familyCount,
@@ -270,7 +274,8 @@ func (h *Handler) CreateInvite(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusBadRequest, "invalid family_id")
 		return
 	}
-	if _, err := h.families.GetByID(r.Context(), familyID); err != nil {
+	family, err := h.families.GetByID(r.Context(), familyID)
+	if err != nil {
 		response.Error(w, http.StatusNotFound, "family not found")
 		return
 	}
@@ -280,17 +285,22 @@ func (h *Handler) CreateInvite(w http.ResponseWriter, r *http.Request) {
 		role = models.FamilyRoleViewer
 	}
 
-	invite, err := h.invites.Create(r.Context(), inviteservice.CreateInput{
-		FamilyID:  familyID,
-		Email:     payload.Email,
-		Role:      role,
-		CreatedBy: actor.ID,
+	result, err := h.invites.Create(r.Context(), inviteservice.CreateInput{
+		FamilyID:    familyID,
+		Email:       payload.Email,
+		Role:        role,
+		CreatedBy:   actor.ID,
+		FamilyName:  family.Name,
+		InviterName: actor.Name,
 	})
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response.JSON(w, http.StatusCreated, invite)
+	response.JSON(w, http.StatusCreated, map[string]any{
+		"invite":     result.Invite,
+		"email_sent": result.EmailSent,
+	})
 }
 
 func (h *Handler) RevokeInvite(w http.ResponseWriter, r *http.Request, inviteID uuid.UUID) {
