@@ -18,6 +18,16 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
+# shellcheck source=scripts/ensure-oci-cli.sh
+source "$ROOT/scripts/ensure-oci-cli.sh"
+# shellcheck source=scripts/fetch-smtp-secret.sh
+source "$ROOT/scripts/fetch-smtp-secret.sh"
+
+if [[ -n "${OCI_SMTP_SECRET_OCID:-}" ]]; then
+  ensure_oci_cli || echo "WARN: OCI CLI install failed; invite email may be disabled" >&2
+fi
+prepare_runtime_env "$ROOT"
+
 echo "==> Rolling back to image tag: ${IMAGE_TAG}"
 sudo docker compose pull api frontend
 sudo docker compose up -d

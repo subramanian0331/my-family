@@ -37,7 +37,7 @@ type client struct {
 type noop struct{}
 
 func New(cfg config.Config) Client {
-	if cfg.SMTPHost == "" || cfg.SMTPFrom == "" {
+	if cfg.SMTPHost == "" || cfg.SMTPFrom == "" || cfg.SMTPUser == "" || cfg.SMTPPassword == "" {
 		return noop{}
 	}
 	port := cfg.SMTPPort
