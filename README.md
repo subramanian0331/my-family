@@ -123,19 +123,27 @@ push to main → tests → build & push images → SSH → git pull → docker c
 
 Create empty repos on Docker Hub named `family-tree-api` and `family-tree-frontend` under **subni9**, or let the first CI push create them.
 
-### Manual deploy
+### Manual deploy & rollback (Makefile)
 
 ```bash
-ssh ubuntu@YOUR_HOST 'cd ~/family_tree && git pull && ./scripts/deploy.sh'
+make deploy                              # latest main + :latest images
+make tags                                # list recent SHAs
+make rollback TAG=a11bd98                # deploy a previous image tag
+make remote-status                       # check server containers
 ```
 
-### Rollback
+Override host/key if needed:
 
 ```bash
-IMAGE_TAG=<git-sha> ./scripts/deploy.sh
+make deploy OCI_HOST=144.24.34.65 OCI_SSH_KEY=~/.ssh/oracle-cloud
 ```
 
-Use a commit SHA tag pushed alongside `latest` (e.g. `subni9/family-tree-api:2976a13`).
+### On the server directly
+
+```bash
+./scripts/deploy.sh
+IMAGE_TAG=a11bd98 ./scripts/rollback.sh a11bd98
+```
 
 ## Features
 
