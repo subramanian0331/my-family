@@ -95,7 +95,7 @@ export function TreePersonNode({
       onClick={onClick}
       onContextMenu={onContextMenu}
       title={marriedIn ? "Married into this family — right-click to open their family tree" : undefined}
-      className={`group relative flex h-full w-full flex-col items-center rounded-2xl px-2 pb-2.5 pt-2.5 text-center transition hover:-translate-y-0.5 ${
+      className={`group relative flex h-full w-full touch-manipulation flex-col items-center rounded-2xl px-2 pb-2.5 pt-2.5 text-center transition active:scale-[0.98] [@media(hover:hover)]:hover:-translate-y-0.5 ${
         marriedIn
           ? "bg-[#faf6fd] shadow-[0_4px_16px_rgba(120,70,150,0.12)] ring-2 ring-[#d4bde8] hover:shadow-[0_8px_24px_rgba(120,70,150,0.18)]"
           : deceased
@@ -176,7 +176,7 @@ export function TreePersonNode({
             e.preventDefault();
             onLinkDragStart(e);
           }}
-          className="absolute -bottom-1 -right-1 z-20 flex h-6 w-6 cursor-crosshair items-center justify-center rounded-full border border-[#c5d0da] bg-white text-[#5c6b78] opacity-0 shadow-md transition group-hover:opacity-100 hover:border-[#d45d7a] hover:text-[#d45d7a]"
+          className="absolute -bottom-1.5 -right-1.5 z-20 flex h-8 w-8 cursor-crosshair touch-manipulation items-center justify-center rounded-full border border-[#c5d0da] bg-white text-[#5c6b78] opacity-100 shadow-md transition [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 hover:border-[#d45d7a] hover:text-[#d45d7a] active:border-[#d45d7a] active:text-[#d45d7a] sm:h-6 sm:w-6"
         >
           <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
             <path d="M8 3v10M3 8h10" strokeLinecap="round" />

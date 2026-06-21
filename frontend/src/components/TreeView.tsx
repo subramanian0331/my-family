@@ -46,6 +46,7 @@ type MarriedInMenuState = {
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 2.5;
 const CANVAS_PADDING = 40;
+const PAN_THRESHOLD_PX = 10;
 
 function formatLinkError(err: unknown) {
   const msg = err instanceof Error ? err.message : "Failed to create link";
@@ -71,10 +72,18 @@ export function TreeView({
 
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
   const [animating, setAnimating] = useState(false);
-  const dragging = useRef(false);
+  const transformRef = useRef(transform);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const panPending = useRef(false);
+  const panActive = useRef(false);
+  const panPointerId = useRef<number | null>(null);
+  const panStartClient = useRef({ x: 0, y: 0 });
   const lastPointer = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
   const inertiaFrame = useRef<number | null>(null);
+  const pinchStartDistance = useRef(0);
+  const pinchStartTransform = useRef<Transform>({ x: 0, y: 0, scale: 1 });
+  const pinching = useRef(false);
 
   const [linkDrag, setLinkDrag] = useState<LinkDrag | null>(null);
   const [linkHoverId, setLinkHoverId] = useState<string | null>(null);
@@ -98,7 +107,8 @@ export function TreeView({
       const el = containerRef.current;
       if (!el || layout.width === 0) return;
       const rect = el.getBoundingClientRect();
-      const padding = 40;
+      const coarse = window.matchMedia("(pointer: coarse)").matches;
+      const padding = coarse ? 20 : 40;
       const scale = Math.min(
         (rect.width - padding) / layout.width,
         (rect.height - padding) / layout.height,
@@ -114,6 +124,10 @@ export function TreeView({
     },
     [layout.height, layout.width, withAnimation],
   );
+
+  useEffect(() => {
+    transformRef.current = transform;
+  }, [transform]);
 
   useEffect(() => {
     fitToView(true);
@@ -215,6 +229,57 @@ export function TreeView({
     });
   };
 
+  const pointerList = () => [...pointers.current.values()];
+
+  const pinchMetrics = () => {
+    const pts = pointerList();
+    if (pts.length < 2) return null;
+    const [a, b] = pts;
+    return {
+      distance: Math.hypot(b.x - a.x, b.y - a.y),
+      centerX: (a.x + b.x) / 2,
+      centerY: (a.y + b.y) / 2,
+    };
+  };
+
+  const beginPinch = () => {
+    const metrics = pinchMetrics();
+    if (!metrics || metrics.distance < 8) return;
+    panPending.current = false;
+    panActive.current = false;
+    pinching.current = true;
+    pinchStartDistance.current = metrics.distance;
+    pinchStartTransform.current = { ...transformRef.current };
+    stopInertia();
+  };
+
+  const applyPinch = () => {
+    const metrics = pinchMetrics();
+    if (!metrics || pinchStartDistance.current <= 0) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = metrics.centerX - rect.left;
+    const py = metrics.centerY - rect.top;
+    const start = pinchStartTransform.current;
+    const nextScale = Math.min(
+      MAX_SCALE,
+      Math.max(MIN_SCALE, start.scale * (metrics.distance / pinchStartDistance.current)),
+    );
+    const ratio = nextScale / start.scale;
+    setTransform({
+      scale: nextScale,
+      x: px - (px - start.x) * ratio,
+      y: py - (py - start.y) * ratio,
+    });
+  };
+
+  const resetPanGesture = () => {
+    panPending.current = false;
+    panActive.current = false;
+    panPointerId.current = null;
+  };
+
   const onWheel = (e: React.WheelEvent) => {
     if (linkDrag || linkMenu) return;
     e.preventDefault();
@@ -225,19 +290,50 @@ export function TreeView({
   const onPointerDown = (e: React.PointerEvent) => {
     if (marriedInMenu) setMarriedInMenu(null);
     if (linkDrag || linkMenu) return;
-    if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest("[data-tree-node]")) return;
     if ((e.target as HTMLElement).closest("[data-link-handle]")) return;
+    if (e.button !== 0 && e.pointerType !== "touch") return;
+
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointers.current.size === 2) {
+      beginPinch();
+      return;
+    }
+
     stopInertia();
-    dragging.current = true;
+    panPending.current = true;
+    panActive.current = false;
+    panPointerId.current = e.pointerId;
+    panStartClient.current = { x: e.clientX, y: e.clientY };
     lastPointer.current = { x: e.clientX, y: e.clientY };
     velocity.current = { x: 0, y: 0 };
-    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (linkDrag) return;
-    if (!dragging.current) return;
+
+    if (pointers.current.has(e.pointerId)) {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    if (pinching.current && pointers.current.size >= 2) {
+      applyPinch();
+      return;
+    }
+
+    if (!panPending.current && !panActive.current) return;
+    if (panPointerId.current !== e.pointerId) return;
+
+    const totalDx = e.clientX - panStartClient.current.x;
+    const totalDy = e.clientY - panStartClient.current.y;
+
+    if (!panActive.current) {
+      if (Math.hypot(totalDx, totalDy) < PAN_THRESHOLD_PX) return;
+      panActive.current = true;
+      suppressNodeClickRef.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+
     const dx = e.clientX - lastPointer.current.x;
     const dy = e.clientY - lastPointer.current.y;
     velocity.current = { x: dx, y: dy };
@@ -247,17 +343,45 @@ export function TreeView({
 
   const onPointerUp = (e: React.PointerEvent) => {
     if (linkDrag) return;
-    if (!dragging.current) return;
-    dragging.current = false;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    startInertia();
+
+    pointers.current.delete(e.pointerId);
+
+    if (pinching.current) {
+      if (pointers.current.size < 2) {
+        pinching.current = false;
+        if (pointers.current.size === 1) {
+          const remaining = [...pointers.current.entries()][0];
+          if (remaining) {
+            panPending.current = true;
+            panActive.current = false;
+            panPointerId.current = remaining[0];
+            panStartClient.current = { ...remaining[1] };
+            lastPointer.current = { ...remaining[1] };
+          }
+        }
+      }
+      return;
+    }
+
+    if (panPointerId.current !== e.pointerId) return;
+
+    if (panActive.current) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        /* already released */
+      }
+      startInertia();
+    }
+
+    resetPanGesture();
   };
 
   const startLinkDrag = (personId: string, e: React.PointerEvent) => {
     const anchor = nodeAnchor(personId);
     if (!anchor) return;
     stopInertia();
-    dragging.current = false;
+    resetPanGesture();
     setLinkMenu(null);
     setLinkError(null);
     const point = clientToCanvas(e.clientX, e.clientY);
@@ -423,9 +547,12 @@ export function TreeView({
     >
       {canEdit && (
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#c5d0dc] bg-white/80 px-4 py-2 text-xs text-[#5c6b78] backdrop-blur-sm">
-          <p>
+          <p className="hidden min-[480px]:block">
             Drag the <span className="font-medium text-[#1e2a36]">+</span> on a person to link them as spouse or
             child.
+          </p>
+          <p className="min-[480px]:hidden">
+            Pinch to zoom · drag to pan · tap a person to open
           </p>
           <button
             type="button"
@@ -446,6 +573,9 @@ export function TreeView({
         className="relative min-h-0 flex-1 cursor-grab overflow-hidden active:cursor-grabbing"
         style={{
           touchAction: "none",
+          overscrollBehavior: "none",
+          WebkitUserSelect: "none",
+          userSelect: "none",
           backgroundColor: "#dce4ec",
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(120, 140, 160, 0.22) 1px, transparent 0), linear-gradient(180deg, #e8eef4 0%, #d4dde8 100%)",
@@ -455,7 +585,11 @@ export function TreeView({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={(e) => {
+          pointers.current.delete(e.pointerId);
+          if (pinching.current && pointers.current.size < 2) pinching.current = false;
+          onPointerUp(e);
+        }}
       >
         <div
           className="absolute left-0 top-0 origin-top-left"
@@ -647,8 +781,11 @@ export function TreeView({
           </div>
         )}
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
-          <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-white/95 px-2 py-1.5 shadow-[0_4px_20px_rgba(30,45,60,0.16)] ring-1 ring-[#c5d0dc] backdrop-blur-sm">
+        <div
+          className="pointer-events-none absolute inset-x-0 flex justify-center"
+          style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-white/95 px-1.5 py-1 shadow-[0_4px_20px_rgba(30,45,60,0.16)] ring-1 ring-[#c5d0dc] backdrop-blur-sm sm:gap-1 sm:px-2 sm:py-1.5">
             <NavButton label="Pan up" onClick={() => panBy(0, 80)}>
               <path d="M8 11 4 7h8L8 11z" />
             </NavButton>
@@ -665,6 +802,15 @@ export function TreeView({
             <span className="mx-0.5 h-5 w-px bg-[#e8e2d8]" />
             <NavButton label="Fit tree to view" onClick={() => fitToView(true)}>
               <path d="M3 4h3v2H5v7H3V4zm10 0h-3v2h1v7h2V4zM8 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.2a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z" />
+            </NavButton>
+            <NavButton
+              label="Zoom out"
+              onClick={() => {
+                const rect = containerRef.current?.getBoundingClientRect();
+                if (rect) zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, 1 / 1.2);
+              }}
+            >
+              <path d="M3.5 7.25h9v1.5h-9z" />
             </NavButton>
             <NavButton
               label="Zoom in"
@@ -696,9 +842,9 @@ function NavButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-full text-[#5c6b78] transition hover:bg-[#eef2f6] hover:text-[#1e2a36]"
+      className="flex h-11 w-11 touch-manipulation items-center justify-center rounded-full text-[#5c6b78] transition active:bg-[#eef2f6] active:text-[#1e2a36] sm:h-8 sm:w-8 sm:hover:bg-[#eef2f6] sm:hover:text-[#1e2a36]"
     >
-      <svg viewBox="0 0 16 16" className="h-4 w-4 fill-current" aria-hidden>
+      <svg viewBox="0 0 16 16" className="h-5 w-5 fill-current sm:h-4 sm:w-4" aria-hidden>
         {children}
       </svg>
     </button>
