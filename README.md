@@ -94,31 +94,48 @@ Also open **TCP 80 and 443** in the Oracle **Security List** and any attached **
 
 ## CI/CD
 
-### Approach: GitHub Actions → SSH deploy
+### Approach: Docker Hub + SSH pull
 
-For a **single OCI VM**, deploying over SSH is the simplest reliable option:
+Images are built on fast GitHub Actions runners and pushed to [Docker Hub](https://hub.docker.com/repositories/subni9). The OCI server only **pulls** images — deploys take ~1–3 minutes instead of building on a 1 GB VM.
 
-- Push to `main` → GitHub Actions runs tests → SSH into the server → `git pull` → `docker compose up --build`
-- No Docker Hub account required
-- Builds happen on the server (fine for a small app on a 1–4 GB VM)
+```
+push to main → tests → build & push images → SSH → git pull → docker compose pull → up -d
+```
 
-**Docker Hub** is worth adding later if you want pre-built images, rollbacks, or multiple servers. It is not required today.
+| Image | Repository |
+|-------|------------|
+| API | `subni9/family-tree-api:latest` |
+| Frontend | `subni9/family-tree-frontend:latest` |
+
+**Local dev** still uses `docker compose up --build` (builds from source).
 
 ### GitHub secrets
 
-In **Settings → Secrets and variables → Actions**, add:
+**Settings → Secrets and variables → Actions:**
 
 | Secret | Value |
 |--------|--------|
+| `DOCKERHUB_USERNAME` | `subni9` |
+| `DOCKERHUB_TOKEN` | [Access token](https://hub.docker.com/settings/security) (not your password) |
 | `OCI_HOST` | Server IP or hostname, e.g. `144.24.34.65` |
 | `OCI_USER` | `ubuntu` |
 | `OCI_SSH_KEY` | Private key contents (`~/.ssh/oracle-cloud`) |
+
+Create empty repos on Docker Hub named `family-tree-api` and `family-tree-frontend` under **subni9**, or let the first CI push create them.
 
 ### Manual deploy
 
 ```bash
 ssh ubuntu@YOUR_HOST 'cd ~/family_tree && git pull && ./scripts/deploy.sh'
 ```
+
+### Rollback
+
+```bash
+IMAGE_TAG=<git-sha> ./scripts/deploy.sh
+```
+
+Use a commit SHA tag pushed alongside `latest` (e.g. `subni9/family-tree-api:2976a13`).
 
 ## Features
 

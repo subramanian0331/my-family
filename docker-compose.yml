@@ -16,6 +16,7 @@ services:
     restart: unless-stopped
 
   api:
+    image: subni9/family-tree-api:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -36,6 +37,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: subni9/family-tree-frontend:${IMAGE_TAG:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile

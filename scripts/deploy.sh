@@ -9,8 +9,13 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
-echo "==> Building and starting containers"
-sudo docker compose up --build -d
+export IMAGE_TAG="${IMAGE_TAG:-latest}"
+
+echo "==> Pulling images (tag: ${IMAGE_TAG})"
+sudo docker compose pull api frontend
+
+echo "==> Starting containers"
+sudo docker compose up -d
 
 echo "==> Pruning unused images"
 sudo docker image prune -f
