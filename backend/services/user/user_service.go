@@ -49,6 +49,21 @@ func (s *service) UpsertGoogleUser(ctx context.Context, input UpsertGoogleUserIn
 	return scanUser(row)
 }
 
+func (s *service) UpdateSiteRole(ctx context.Context, userID uuid.UUID, role models.SiteRole) (models.User, error) {
+	row := s.db.Pool().QueryRow(ctx, `
+		UPDATE users SET site_role = $2, updated_at = now()
+		WHERE id = $1
+		RETURNING id, google_sub, email, name, avatar_url, site_role, created_at, updated_at
+	`, userID, role)
+	return scanUser(row)
+}
+
+func (s *service) CountBySiteRole(ctx context.Context, role models.SiteRole) (int, error) {
+	var count int
+	err := s.db.Pool().QueryRow(ctx, `SELECT count(*) FROM users WHERE site_role = $1`, role).Scan(&count)
+	return count, err
+}
+
 func (s *service) List(ctx context.Context) ([]models.User, error) {
 	rows, err := s.db.Pool().Query(ctx, `
 		SELECT id, google_sub, email, name, avatar_url, site_role, created_at, updated_at

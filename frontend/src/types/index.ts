@@ -116,3 +116,35 @@ export interface BulkCreatePayload {
   people: BulkCreatePerson[];
   relationships: BulkCreateRelationship[];
 }
+
+export interface AdminFamilyAccess {
+  family_id: string;
+  family_name: string;
+  role: FamilyRole;
+}
+
+export interface AdminUserDetail {
+  user: User & { created_at?: string };
+  families: AdminFamilyAccess[];
+}
+
+export interface AdminInviteDetail {
+  invite: Invite & { expires_at?: string; created_at?: string };
+  family_name: string;
+}
+
+export interface AdminSettings {
+  frontend_url: string;
+  google_enabled: boolean;
+  site_admin_email: string;
+  user_count: number;
+  family_count: number;
+  pending_invites: number;
+}
+
+export interface AdminFamily {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+}

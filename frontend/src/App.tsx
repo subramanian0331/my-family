@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { useAuth } from "./context/AuthContext";
 import { AuthCallback } from "./pages/AuthCallback";
+import { Admin } from "./pages/Admin";
 import { Families } from "./pages/Families";
 import { FamilyView } from "./pages/FamilyView";
 import { Login } from "./pages/Login";
@@ -31,6 +32,16 @@ export default function App() {
           <Protected>
             <Layout>
               <Families />
+            </Layout>
+          </Protected>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <Protected>
+            <Layout>
+              <Admin />
             </Layout>
           </Protected>
         }

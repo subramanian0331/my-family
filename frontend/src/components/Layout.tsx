@@ -13,6 +13,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
           {user && (
             <div className="flex items-center gap-3">
+              {user.site_role === "admin" && (
+                <Link
+                  to="/admin"
+                  className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-100"
+                >
+                  Admin
+                </Link>
+              )}
               {user.avatar_url ? (
                 <img src={user.avatar_url} alt="" className="h-8 w-8 rounded-full" />
               ) : (

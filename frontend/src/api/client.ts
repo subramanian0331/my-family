@@ -154,6 +154,29 @@ export const api = {
     if (!response.ok) throw new Error("export failed");
     return response.blob();
   },
+  adminUsers: () => requestArray<import("../types").AdminUserDetail>("/api/admin/users"),
+  adminFamilies: () => requestArray<import("../types").AdminFamily>("/api/admin/families"),
+  adminInvites: () => requestArray<import("../types").AdminInviteDetail>("/api/admin/invites"),
+  adminSettings: () => request<import("../types").AdminSettings>("/api/admin/settings"),
+  adminUpdateUserRole: (userId: string, siteRole: import("../types").SiteRole) =>
+    request(`/api/admin/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ site_role: siteRole }),
+    }),
+  adminSetUserFamilyAccess: (userId: string, familyId: string, role: import("../types").FamilyRole) =>
+    request(`/api/admin/users/${userId}/families/${familyId}`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+    }),
+  adminRemoveUserFamilyAccess: (userId: string, familyId: string) =>
+    request(`/api/admin/users/${userId}/families/${familyId}`, { method: "DELETE" }),
+  adminCreateInvite: (familyId: string, email: string, role: import("../types").FamilyRole) =>
+    request("/api/admin/invites", {
+      method: "POST",
+      body: JSON.stringify({ family_id: familyId, email, role }),
+    }),
+  adminRevokeInvite: (inviteId: string) =>
+    request(`/api/admin/invites/${inviteId}`, { method: "DELETE" }),
   importGedcom: async (familyId: string, file: File) => {
     const token = getToken();
     const response = await fetch(`/api/families/${familyId}/gedcom/import`, {

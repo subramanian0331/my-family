@@ -177,6 +177,52 @@ func (s *service) ListMembers(ctx context.Context, familyID uuid.UUID) ([]Member
 	return members, rows.Err()
 }
 
+func (s *service) ListMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]models.AdminFamilyAccess, error) {
+	rows, err := s.db.Pool().Query(ctx, `
+		SELECT f.id, f.name, fm.role
+		FROM family_members fm
+		JOIN families f ON f.id = fm.family_id
+		WHERE fm.user_id = $1
+		ORDER BY f.name ASC
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var memberships []models.AdminFamilyAccess
+	for rows.Next() {
+		var access models.AdminFamilyAccess
+		if err := rows.Scan(&access.FamilyID, &access.FamilyName, &access.Role); err != nil {
+			return nil, err
+		}
+		memberships = append(memberships, access)
+	}
+	return memberships, rows.Err()
+}
+
+func (s *service) SetMemberRole(ctx context.Context, familyID, userID uuid.UUID, role models.FamilyRole) error {
+	_, err := s.db.Pool().Exec(ctx, `
+		INSERT INTO family_members (family_id, user_id, role)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (family_id, user_id) DO UPDATE SET role = EXCLUDED.role
+	`, familyID, userID, role)
+	return err
+}
+
+func (s *service) RemoveMember(ctx context.Context, familyID, userID uuid.UUID) error {
+	_, err := s.db.Pool().Exec(ctx, `
+		DELETE FROM family_members WHERE family_id = $1 AND user_id = $2
+	`, familyID, userID)
+	return err
+}
+
+func (s *service) CountAll(ctx context.Context) (int, error) {
+	var count int
+	err := s.db.Pool().QueryRow(ctx, `SELECT count(*) FROM families`).Scan(&count)
+	return count, err
+}
+
 func (s *service) UserRole(ctx context.Context, familyID, userID uuid.UUID) (models.FamilyRole, error) {
 	var role models.FamilyRole
 	err := s.db.Pool().QueryRow(ctx, `

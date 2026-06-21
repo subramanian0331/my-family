@@ -20,5 +20,7 @@ type Service interface {
 	Accept(ctx context.Context, token string, user models.User) error
 	ListPendingForEmail(ctx context.Context, email string) ([]models.Invite, error)
 	ListForFamily(ctx context.Context, familyID uuid.UUID) ([]models.Invite, error)
+	ListAllPending(ctx context.Context) ([]models.AdminInviteDetail, error)
+	CountPending(ctx context.Context) (int, error)
 	Revoke(ctx context.Context, inviteID uuid.UUID) error
 }

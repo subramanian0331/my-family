@@ -94,6 +94,13 @@ func NewRouter(deps Dependencies) *Router {
 
 	mux.Handle("GET /api/admin/users", withUser(deps.Admin.ListUsers))
 	mux.Handle("GET /api/admin/families", withUser(deps.Admin.ListFamilies))
+	mux.Handle("GET /api/admin/invites", withUser(deps.Admin.ListInvites))
+	mux.Handle("GET /api/admin/settings", withUser(deps.Admin.Settings))
+	mux.Handle("PATCH /api/admin/users/{userID}", withUser(withUserID(deps.Admin.UpdateUser)))
+	mux.Handle("PUT /api/admin/users/{userID}/families/{familyID}", withUser(withUserAndFamilyID(deps.Admin.SetUserFamilyAccess)))
+	mux.Handle("DELETE /api/admin/users/{userID}/families/{familyID}", withUser(withUserAndFamilyID(deps.Admin.RemoveUserFamilyAccess)))
+	mux.Handle("POST /api/admin/invites", withUser(deps.Admin.CreateInvite))
+	mux.Handle("DELETE /api/admin/invites/{inviteID}", withUser(withInviteID(deps.Admin.RevokeInvite)))
 
 	return &Router{mux: mux}
 }
@@ -126,6 +133,28 @@ func withRelationshipID(handler uuidHandler) http.HandlerFunc {
 
 func withInviteID(handler uuidHandler) http.HandlerFunc {
 	return withPathID("inviteID", handler)
+}
+
+func withUserID(handler uuidHandler) http.HandlerFunc {
+	return withPathID("userID", handler)
+}
+
+type userFamilyHandler func(http.ResponseWriter, *http.Request, uuid.UUID, uuid.UUID)
+
+func withUserAndFamilyID(handler userFamilyHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := uuid.Parse(r.PathValue("userID"))
+		if err != nil {
+			response.Error(w, http.StatusBadRequest, "invalid user id")
+			return
+		}
+		familyID, err := uuid.Parse(r.PathValue("familyID"))
+		if err != nil {
+			response.Error(w, http.StatusBadRequest, "invalid family id")
+			return
+		}
+		handler(w, r, userID, familyID)
+	}
 }
 
 type familyPersonHandler func(http.ResponseWriter, *http.Request, uuid.UUID, uuid.UUID)

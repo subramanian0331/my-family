@@ -20,4 +20,6 @@ type Service interface {
 	GetByEmail(ctx context.Context, email string) (models.User, error)
 	UpsertGoogleUser(ctx context.Context, input UpsertGoogleUserInput) (models.User, error)
 	List(ctx context.Context) ([]models.User, error)
+	UpdateSiteRole(ctx context.Context, userID uuid.UUID, role models.SiteRole) (models.User, error)
+	CountBySiteRole(ctx context.Context, role models.SiteRole) (int, error)
 }

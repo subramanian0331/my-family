@@ -66,7 +66,7 @@ func InitializeServer() (*server.Server, error) {
 	treeHandler := tree.NewHandler(personService, relationshipService, familyService)
 	gedcomService := gedcom.NewService(client)
 	gedcomHandler := gedcom2.NewHandler(gedcomService, familyService)
-	adminHandler := admin.NewHandler(service, familyService)
+	adminHandler := admin.NewHandler(service, familyService, inviteService, configConfig)
 	healthHandler := health.NewHandler(client)
 	dependencies := handlers.Dependencies{
 		Auth:         handler,

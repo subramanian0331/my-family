@@ -35,5 +35,9 @@ type Service interface {
 	ListAll(ctx context.Context) ([]models.Family, error)
 	ListMembers(ctx context.Context, familyID uuid.UUID) ([]MemberWithUser, error)
 	UserRole(ctx context.Context, familyID, userID uuid.UUID) (models.FamilyRole, error)
+	ListMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]models.AdminFamilyAccess, error)
+	SetMemberRole(ctx context.Context, familyID, userID uuid.UUID, role models.FamilyRole) error
+	RemoveMember(ctx context.Context, familyID, userID uuid.UUID) error
+	CountAll(ctx context.Context) (int, error)
 	EnsureNativeFamilyForPerson(ctx context.Context, input EnsureNativeFamilyInput) (models.Family, error)
 }

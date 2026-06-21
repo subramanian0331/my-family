@@ -189,6 +189,50 @@ func (s *service) ListForFamily(ctx context.Context, familyID uuid.UUID) ([]mode
 	return invites, rows.Err()
 }
 
+func (s *service) ListAllPending(ctx context.Context) ([]models.AdminInviteDetail, error) {
+	rows, err := s.db.Pool().Query(ctx, `
+		SELECT i.id, i.family_id, i.email, i.role, i.token, i.expires_at, i.accepted_at, i.created_by, i.created_at,
+		       f.name
+		FROM invites i
+		JOIN families f ON f.id = i.family_id
+		WHERE i.accepted_at IS NULL AND i.expires_at > now()
+		ORDER BY i.created_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var invites []models.AdminInviteDetail
+	for rows.Next() {
+		var detail models.AdminInviteDetail
+		if err := rows.Scan(
+			&detail.Invite.ID,
+			&detail.Invite.FamilyID,
+			&detail.Invite.Email,
+			&detail.Invite.Role,
+			&detail.Invite.Token,
+			&detail.Invite.ExpiresAt,
+			&detail.Invite.AcceptedAt,
+			&detail.Invite.CreatedBy,
+			&detail.Invite.CreatedAt,
+			&detail.FamilyName,
+		); err != nil {
+			return nil, err
+		}
+		invites = append(invites, detail)
+	}
+	return invites, rows.Err()
+}
+
+func (s *service) CountPending(ctx context.Context) (int, error) {
+	var count int
+	err := s.db.Pool().QueryRow(ctx, `
+		SELECT count(*) FROM invites WHERE accepted_at IS NULL AND expires_at > now()
+	`).Scan(&count)
+	return count, err
+}
+
 func (s *service) Revoke(ctx context.Context, inviteID uuid.UUID) error {
 	_, err := s.db.Pool().Exec(ctx, `DELETE FROM invites WHERE id = $1 AND accepted_at IS NULL`, inviteID)
 	return err
