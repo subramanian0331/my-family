@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
-# Load .env (except SMTP_PASSWORD) and optionally fetch SMTP_PASSWORD from OCI Vault.
+# Fetch SMTP_PASSWORD from OCI Vault when OCI_SMTP_SECRET_OCID is set in .env.
+# Docker Compose reads .env for all other variables — we never put SMTP_PASSWORD there.
 set -euo pipefail
 
-load_env_without_smtp_password() {
-  local env_file="${1:-.env}"
-  if [[ ! -f "$env_file" ]]; then
-    return 0
-  fi
-  set -a
-  # shellcheck disable=SC1090
-  source <(grep -Ev '^(SMTP_PASSWORD|#|$)' "$env_file")
-  set +a
+read_env_var() {
+  local key="$1"
+  local file="${2:-.env}"
+  local line value
+  line="$(grep -E "^${key}=" "$file" 2>/dev/null | tail -1 || true)"
+  [[ -n "$line" ]] || return 1
+  value="${line#*=}"
+  value="${value%\"}"
+  value="${value#\"}"
+  value="${value%\'}"
+  value="${value#\'}"
+  printf '%s' "$value"
 }
 
 instance_region() {
-  if [[ -n "${OCI_REGION:-}" ]]; then
-    echo "$OCI_REGION"
+  local region
+  region="$(read_env_var OCI_REGION 2>/dev/null || true)"
+  if [[ -n "$region" ]]; then
+    echo "$region"
     return 0
   fi
   curl -sf -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/ \
@@ -25,7 +31,9 @@ instance_region() {
 fetch_smtp_password_from_oci() {
   unset SMTP_PASSWORD
 
-  if [[ -z "${OCI_SMTP_SECRET_OCID:-}" ]]; then
+  local secret_ocid
+  secret_ocid="$(read_env_var OCI_SMTP_SECRET_OCID 2>/dev/null || true)"
+  if [[ -z "$secret_ocid" ]]; then
     return 0
   fi
 
@@ -42,7 +50,7 @@ fetch_smtp_password_from_oci() {
 
   local encoded
   if ! encoded="$(oci secrets secret-bundle get-secret-bundle \
-    --secret-id "$OCI_SMTP_SECRET_OCID" \
+    --secret-id "$secret_ocid" \
     --auth instance_principal \
     --region "$region" \
     --query 'data."secret-bundle-content".content' \
@@ -63,6 +71,5 @@ fetch_smtp_password_from_oci() {
 
 prepare_runtime_env() {
   local root="${1:-.}"
-  load_env_without_smtp_password "$root/.env"
-  fetch_smtp_password_from_oci
+  (cd "$root" && fetch_smtp_password_from_oci)
 }
