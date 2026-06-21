@@ -40,9 +40,9 @@ export function Admin() {
         api.adminFamilies(),
         api.adminSettings(),
       ]);
-      setUsers(userRows);
+      setUsers(userRows.map((row) => ({ ...row, families: row.families ?? [] })));
       setInvites(inviteRows);
-      setFamilies(familyRows);
+      setFamilies(familyRows ?? []);
       setSettings(settingsRow);
       setInviteFamilyId((prev) => prev || familyRows[0]?.id || "");
     } catch (err) {
@@ -342,7 +342,8 @@ function UserAdminCard({
   const [addFamilyId, setAddFamilyId] = useState("");
   const [addRole, setAddRole] = useState<FamilyRole>("viewer");
   const u = row.user;
-  const memberFamilyIds = new Set(row.families.map((f) => f.family_id));
+  const userFamilies = row.families ?? [];
+  const memberFamilyIds = new Set(userFamilies.map((f) => f.family_id));
   const availableFamilies = families.filter((f) => !memberFamilyIds.has(f.id));
 
   return (
@@ -379,11 +380,11 @@ function UserAdminCard({
         <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
           Family access
         </h3>
-        {row.families.length === 0 ? (
+        {userFamilies.length === 0 ? (
           <p className="text-sm text-slate-500">No family memberships</p>
         ) : (
           <ul className="space-y-2">
-            {row.families.map((f) => (
+            {userFamilies.map((f) => (
               <li
                 key={f.family_id}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"

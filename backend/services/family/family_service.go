@@ -190,7 +190,7 @@ func (s *service) ListMembershipsForUser(ctx context.Context, userID uuid.UUID) 
 	}
 	defer rows.Close()
 
-	var memberships []models.AdminFamilyAccess
+	memberships := []models.AdminFamilyAccess{}
 	for rows.Next() {
 		var access models.AdminFamilyAccess
 		if err := rows.Scan(&access.FamilyID, &access.FamilyName, &access.Role); err != nil {
