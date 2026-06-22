@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import { Logo } from "../components/Logo";
 import type { FamilySummary, Invite } from "../types";
 
 export function Families() {
@@ -43,9 +44,11 @@ export function Families() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-brand-green">My Families</h1>
-        <p className="text-brand-blue/80">Select a family to view the tree and search people.</p>
+      <div className="flex flex-col items-center px-2 pb-2 pt-2 text-center sm:px-4 sm:pb-4">
+        <Logo variant="home" className="mx-auto" />
+        <p className="mt-4 max-w-xl text-base text-brand-blue/85 sm:text-lg">
+          Select a family to view the tree and search people.
+        </p>
       </div>
 
       {invites.length > 0 && (

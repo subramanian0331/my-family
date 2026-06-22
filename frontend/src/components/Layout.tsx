@@ -1,16 +1,20 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useAuth } from "../context/AuthContext";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const isHome = useLocation().pathname === "/";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-cream via-brand-mist to-[#dceaf2]">
       <header className="sticky top-0 z-20 border-b border-brand-leaf/80 bg-white/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:py-3">
-          <Link to="/" className="shrink-0">
-            <Logo />
+          <Link
+            to="/"
+            className={`shrink-0 ${isHome ? "text-lg font-semibold text-brand-green" : ""}`}
+          >
+            {isHome ? "My Family" : <Logo />}
           </Link>
           {user && (
             <div className="flex items-center gap-3">
