@@ -37,25 +37,30 @@ export function Families() {
     await load();
   };
 
-  if (loading) return <div className="text-slate-500">Loading families...</div>;
+  if (loading) {
+    return <div className="py-12 text-center text-brand-blue/70">Loading families...</div>;
+  }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">My Families</h1>
-        <p className="text-slate-500">Select a family to view the tree and search people.</p>
+        <h1 className="text-2xl font-semibold text-brand-green">My Families</h1>
+        <p className="text-brand-blue/80">Select a family to view the tree and search people.</p>
       </div>
 
       {invites.length > 0 && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <section className="rounded-2xl border border-amber-200/80 bg-amber-50/90 p-4 shadow-sm">
           <h2 className="mb-3 font-medium text-amber-900">Pending invites</h2>
           <div className="space-y-2">
             {invites.map((invite) => (
-              <div key={invite.id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
-                <span className="text-sm">Invite as {invite.role}</span>
+              <div
+                key={invite.id}
+                className="flex items-center justify-between rounded-xl bg-white/90 px-4 py-3"
+              >
+                <span className="text-sm text-slate-700">Invite as {invite.role}</span>
                 <button
                   onClick={() => void accept(invite.token)}
-                  className="rounded-lg bg-accent px-3 py-1.5 text-sm text-white"
+                  className="rounded-lg bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent-hover"
                 >
                   Accept
                 </button>
@@ -65,33 +70,18 @@ export function Families() {
         </section>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {families.map((family) => (
-          <Link
-            key={family.id}
-            to={`/families/${family.id}`}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-accent/40 hover:shadow"
-          >
-            <h3 className="font-semibold text-slate-900">{family.name}</h3>
-            <p className="mt-1 line-clamp-2 text-sm text-slate-500">{family.description || "No description"}</p>
-            <span className="mt-4 inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs capitalize text-slate-600">
-              {family.role}
-            </span>
-          </Link>
-        ))}
-      </div>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-4 font-medium">Create a family</h2>
+      <section className="rounded-2xl border border-brand-leaf bg-white/90 p-5 shadow-sm backdrop-blur-sm">
+        <h2 className="mb-1 font-semibold text-brand-green">Create a family</h2>
+        <p className="mb-4 text-sm text-brand-blue/75">Start a new tree for your relatives.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <input
-            className="rounded-lg border border-slate-200 px-3 py-2"
+            className="rounded-lg border border-brand-leaf bg-white px-3 py-2.5 outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20"
             placeholder="Family name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input
-            className="rounded-lg border border-slate-200 px-3 py-2"
+            className="rounded-lg border border-brand-leaf bg-white px-3 py-2.5 outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20"
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -99,11 +89,35 @@ export function Families() {
         </div>
         <button
           onClick={() => void create()}
-          className="mt-4 rounded-lg bg-accent px-4 py-2 font-medium text-white hover:bg-accent-hover"
+          className="mt-4 rounded-lg bg-accent px-4 py-2.5 font-medium text-white shadow-sm hover:bg-accent-hover"
         >
           Create family
         </button>
       </section>
+
+      {families.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-brand-leaf bg-white/60 px-4 py-8 text-center text-brand-blue/70">
+          No families yet — create one above to get started.
+        </p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {families.map((family) => (
+            <Link
+              key={family.id}
+              to={`/families/${family.id}`}
+              className="rounded-2xl border border-brand-leaf bg-white/90 p-5 shadow-sm transition hover:border-brand-teal/50 hover:shadow-md"
+            >
+              <h3 className="font-semibold text-brand-green">{family.name}</h3>
+              <p className="mt-1 line-clamp-2 text-sm text-brand-blue/75">
+                {family.description || "No description"}
+              </p>
+              <span className="mt-4 inline-block rounded-full bg-brand-leaf px-2.5 py-0.5 text-xs capitalize text-brand-green">
+                {family.role}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

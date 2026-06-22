@@ -6,9 +6,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+    <div className="min-h-screen bg-gradient-to-b from-brand-cream via-brand-mist to-[#dceaf2]">
+      <header className="sticky top-0 z-20 border-b border-brand-leaf/80 bg-white/85 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:py-3">
           <Link to="/" className="shrink-0">
             <Logo />
           </Link>
