@@ -4,11 +4,11 @@ type BrandMarkProps = {
 
 export function BrandMark({ className = "" }: BrandMarkProps) {
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`.trim()}>
+    <span className={`inline-flex items-center gap-3 ${className}`.trim()}>
       <img
         src="/logo-tree.png"
         alt=""
-        className="h-9 w-9 shrink-0 object-contain object-center sm:h-10 sm:w-10"
+        className="h-[2.1rem] w-auto shrink-0 object-contain sm:h-[2.5rem]"
         decoding="async"
         aria-hidden
       />

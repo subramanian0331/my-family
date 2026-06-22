@@ -51,7 +51,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <main
         className={`relative z-10 mx-auto max-w-6xl px-4 ${
-          isHome ? "pb-10 pt-[min(34vh,20rem)] sm:pb-12" : "py-6"
+          isHome ? "pb-10 pt-[min(46vh,28rem)] sm:pb-12 sm:pt-[min(50vh,32rem)]" : "py-6"
         }`}
       >
         {children}
