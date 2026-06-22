@@ -16,6 +16,8 @@ export interface FamilySummary {
   slug: string;
   description: string;
   role: FamilyRole;
+  member_count?: number;
+  updated_at?: string;
 }
 
 export interface FamilyDetail {

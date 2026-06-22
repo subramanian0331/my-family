@@ -33,5 +33,6 @@ type FamilyMember struct {
 
 type FamilySummary struct {
 	Family
-	Role FamilyRole `json:"role"`
+	Role        FamilyRole `json:"role"`
+	MemberCount int        `json:"member_count"`
 }

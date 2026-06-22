@@ -101,11 +101,14 @@ func (s *service) Delete(ctx context.Context, familyID uuid.UUID) error {
 
 func (s *service) ListForUser(ctx context.Context, userID uuid.UUID) ([]models.FamilySummary, error) {
 	rows, err := s.db.Pool().Query(ctx, `
-		SELECT f.id, f.name, f.slug, f.description, f.created_by, f.created_at, f.updated_at, fm.role
+		SELECT f.id, f.name, f.slug, f.description, f.created_by, f.created_at, f.updated_at, fm.role,
+		       COALESCE((
+		         SELECT COUNT(*)::int FROM person_families pf WHERE pf.family_id = f.id
+		       ), 0) AS member_count
 		FROM families f
 		JOIN family_members fm ON fm.family_id = f.id
 		WHERE fm.user_id = $1
-		ORDER BY f.name ASC
+		ORDER BY f.updated_at DESC, f.name ASC
 	`, userID)
 	if err != nil {
 		return nil, err
@@ -124,6 +127,7 @@ func (s *service) ListForUser(ctx context.Context, userID uuid.UUID) ([]models.F
 			&summary.CreatedAt,
 			&summary.UpdatedAt,
 			&summary.Role,
+			&summary.MemberCount,
 		); err != nil {
 			return nil, err
 		}
