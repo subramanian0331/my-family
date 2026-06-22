@@ -8,6 +8,8 @@ export default {
           green: "#2d7a5f",
           teal: "#2a9d8f",
           blue: "#1e6b8f",
+          my: "#2e5a4a",
+          family: "#2a5a8a",
           lime: "#7cb342",
           brown: "#8d6e4a",
           cream: "#f4faf7",
@@ -21,6 +23,7 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+        brand: ["Nunito", "Inter", "system-ui", "sans-serif"],
       },
     },
   },
