@@ -79,6 +79,42 @@ function parentKey(parentIds: string[]) {
   return [...parentIds].sort().join(":");
 }
 
+/** Expand a child's parent set with spouses so partial links still group under the couple. */
+function layoutParentKey(
+  childId: string,
+  parentsOf: Map<string, string[]>,
+  spousesOf: Map<string, string[]>,
+) {
+  const parents = parentsOf.get(childId) || [];
+  if (parents.length === 0) return "";
+
+  const expanded = new Set(parents);
+  for (const parentId of parents) {
+    for (const spouseId of spousesOf.get(parentId) || []) {
+      expanded.add(spouseId);
+    }
+  }
+  return parentKey([...expanded]);
+}
+
+function childMatchesParentCluster(
+  childId: string,
+  parentCluster: string[],
+  parentsOf: Map<string, string[]>,
+) {
+  const childParents = parentsOf.get(childId) || [];
+  if (childParents.length === 0) return false;
+
+  const clusterKey = parentKey(parentCluster);
+  if (parentKey(childParents) === clusterKey) return true;
+
+  if (parentCluster.length >= 2) {
+    const clusterSet = new Set(parentCluster);
+    return childParents.some((parentId) => clusterSet.has(parentId));
+  }
+  return false;
+}
+
 function parentEdgeKey(childId: string, parentId: string) {
   return `${childId}\0${parentId}`;
 }
@@ -229,11 +265,16 @@ function clusterBounds(cluster: string[], positions: Map<string, number>) {
   return { left, right, center: (left + right) / 2 };
 }
 
-function groupClustersByParentKey(clusters: string[][], parentsOf: Map<string, string[]>) {
+function groupClustersByParentKey(
+  clusters: string[][],
+  parentsOf: Map<string, string[]>,
+  spousesOf: Map<string, string[]>,
+) {
   const batches = new Map<string, string[][]>();
   const batchKeys: string[] = [];
   for (const cluster of clusters) {
-    const key = parentKey(parentsOf.get(cluster[0]) || []) || `root:${cluster[0]}`;
+    const key =
+      layoutParentKey(cluster[0], parentsOf, spousesOf) || `root:${cluster[0]}`;
     if (!batches.has(key)) {
       batches.set(key, []);
       batchKeys.push(key);
@@ -250,10 +291,9 @@ function directChildMembers(
   byGen: Map<number, string[][]>,
   parentsOf: Map<string, string[]>,
 ) {
-  const pk = parentKey(parentCluster);
   const members = new Set<string>();
   for (const cluster of byGen.get(childGen) || []) {
-    if (!cluster.some((id) => parentKey(parentsOf.get(id) || []) === pk)) continue;
+    if (!cluster.some((id) => childMatchesParentCluster(id, parentCluster, parentsOf))) continue;
     for (const id of cluster) members.add(id);
   }
   return members;
@@ -301,9 +341,8 @@ function childClustersForParents(
   byGen: Map<number, string[][]>,
   parentsOf: Map<string, string[]>,
 ) {
-  const pk = parentKey(parentCluster);
   return (byGen.get(childGen) || []).filter((cluster) =>
-    cluster.some((id) => parentKey(parentsOf.get(id) || []) === pk),
+    cluster.some((id) => childMatchesParentCluster(id, parentCluster, parentsOf)),
   );
 }
 
@@ -431,6 +470,7 @@ function assignHorizontalPositions(
   byGen: Map<number, string[][]>,
   parentsOf: Map<string, string[]>,
   childrenOf: Map<string, string[]>,
+  spousesOf: Map<string, string[]>,
   generations: number[],
 ) {
   const positions = new Map<string, number>();
@@ -438,7 +478,7 @@ function assignHorizontalPositions(
 
   const maxGen = generations[generations.length - 1];
   const leafClusters = byGen.get(maxGen) || [];
-  const leafBatches = groupClustersByParentKey(leafClusters, parentsOf);
+  const leafBatches = groupClustersByParentKey(leafClusters, parentsOf, spousesOf);
 
   let cursor = LAYOUT_PADDING;
   for (const batch of leafBatches) {
@@ -542,7 +582,7 @@ export function computeTreeLayout(persons: Person[], relationships: Relationship
   const byGen = buildClusters(personIds, gen, relationships);
   const divorcedPairs = divorcedSpousePairKeys(relationships);
   const generations = [...byGen.keys()].sort((a, b) => a - b);
-  const positions = assignHorizontalPositions(byGen, parentsOf, childrenOf, generations);
+  const positions = assignHorizontalPositions(byGen, parentsOf, childrenOf, spousesOf, generations);
   layoutFamiliesTopDown(byGen, parentsOf, childrenOf, generations, positions);
 
   for (const g of generations) {
