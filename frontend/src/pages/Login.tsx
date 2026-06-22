@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Logo } from "../components/Logo";
 
 export function Login() {
   const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null);
@@ -14,8 +15,9 @@ export function Login() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="mb-2 text-2xl font-semibold text-slate-900">Family Tree</h1>
-        <p className="mb-8 text-slate-500">Build and share your family history.</p>
+        <div className="mb-6 flex justify-center">
+          <Logo variant="hero" />
+        </div>
 
         {oauthError && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
